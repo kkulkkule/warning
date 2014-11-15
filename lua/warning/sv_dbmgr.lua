@@ -67,6 +67,19 @@ function HWarn.DB.AddWarn(sid, warn, reason)
 		ulx.banid(NULL, sid, 4320, "TOO MANY BAD ACT")
 	end
 	
+	local allFiles = file.Find("polices/*.txt", "DATA")
+	for _, v in pairs(allFiles) do 
+		local data = file.Read("polices/" .. v, "DATA")
+		local target = ""
+		for v in string.gfind(data, "신고 대상자: .+%((STEAM_%d:%d:%d+)%)\r\n") do
+			target = v
+		end
+		
+		if target == sid then
+			file.Append("polices/" .. v, "\r\nprocessed")
+		end
+	end
+	
 	HWarn.WarnMsg(sid, warn, reason)
 end
 

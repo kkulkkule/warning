@@ -5,6 +5,7 @@ HWarn = {}
 function HWarn.Init()
 
 end
+hook.Add("Initialize", "HWarn.Init", HWarn.Init)
 
 function HWarn.ReceiveMsg()
 	local t = net.ReadString()
@@ -52,7 +53,5 @@ function HWarn.ChatHook(pl, text, tc, dead)
 end
 hook.Remove("OnPlayerChat", "HWarnChatHook", HWarn.ChatHook)
 hook.Add("OnPlayerChat", "HWarnChatHook", HWarn.ChatHook)
-
-HWarn.Init()
 
 MsgC(Color(0, 255, 0), "Complete!\n")

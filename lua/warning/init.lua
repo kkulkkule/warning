@@ -8,6 +8,7 @@ function HWarn.Init()
 	concommand.Add("hwarn", HWarn.Warn)
 	concommand.Add("hwarn_show", HWarn.ShowWarn)
 end
+hook.Add("Initialize", "HWarn.Init", HWarn.Init)
 
 function HWarn.WarnMsg(sid, warn, reason)
 	local nick = HWarn.DB.NickFromSID(sid)
@@ -46,20 +47,24 @@ function HWarn.Warn(pl, cmd, args, text)
 			reason = reason .. " " .. tostring(args[i])
 		end
 	end
-  
+	
 	if !HWarn.IsSteamID(sid) then
 		local curpls = {}
 		for _, v in pairs(player.GetAll()) do
-		  if string.find(string.lower(v:Nick()), string.lower(sid)) then
+			if string.find(string.lower(v:Nick()), string.lower(sid)) then
 			table.insert(curpls, v)
-		  end
+			end
 		end
 		if table.Count(curpls) > 1 then
-		  pl:PrintMessage(HUD_PRINTTALK, "해당 닉네임의 플레이어가 둘 이상입니다: " .. tostring(table.concat(curpls, ", ")))
-		  return false
+			if pl == NULL then
+				print(HUD_PRINTTALK, "Duplicated nickname.")
+			else
+				pl:PrintMessage(HUD_PRINTTALK, "해당 닉네임의 플레이어가 둘 이상입니다: " .. tostring(table.concat(curpls, ", ")))
+			end
+			return false
 		elseif table.Count(curpls) == 1 then
-		  HWarn.DB.AddWarn(curpls[1]:SteamID(), warn, reason)
-		  return true
+			HWarn.DB.AddWarn(curpls[1]:SteamID(), warn, reason)
+			return true
 		end
 		sid = HWarn.DB.SIDFromNick(sid)
 	end
@@ -75,16 +80,16 @@ function HWarn.ShowWarn(pl, cmd, args, text)
 	if !HWarn.IsSteamID(sid) then
 		local curpls = {}
 		for _, v in pairs(player.GetAll()) do
-		  if string.find(string.lower(v:Nick()), string.lower(sid)) then
+			if string.find(string.lower(v:Nick()), string.lower(sid)) then
 			table.insert(curpls, v)
-		  end
+			end
 		end
 		if table.Count(curpls) > 1 then
-		  pl:PrintMessage(HUD_PRINTTALK, "해당 닉네임의 플레이어가 둘 이상입니다: " .. tostring(table.concat(curpls, ", ")))
-		  return false
+			pl:PrintMessage(HUD_PRINTTALK, "해당 닉네임의 플레이어가 둘 이상입니다: " .. tostring(table.concat(curpls, ", ")))
+			return false
 		elseif table.Count(curpls) == 1 then
-		  HWarn.ShowWarnMsg(curpls[1]:SteamID())
-		  return true
+			HWarn.ShowWarnMsg(curpls[1]:SteamID())
+			return true
 		end
 		sid = HWarn.DB.SIDFromNick(sid)
 	end
@@ -110,5 +115,4 @@ function HWarn.IsSteamID(str)
 	return string.sub(str, 8, 8) == ":" and string.sub(str, 10, 10) == ":" and string.Left(str, 6) == "STEAM_"
 end
 
-HWarn.Init()
 MsgC(Color(0, 255, 0), "Complete!\n")

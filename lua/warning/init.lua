@@ -136,7 +136,7 @@ function HWarn.ShowWarnMsg(sid)
 			ulx.banid(NULL, sid, 1440, "누적 경고 3회로 1일 밴 당하셨습니다.")
 			banTime = 1440
 		elseif warn > 3 then
-			ulx.banid(NULL, sid, 4320, "누적 경고 4회로 1일 밴 당하셨습니다.")
+			ulx.banid(NULL, sid, 4320, "누적 경고 4회로 3일 밴 당하셨습니다.")
 			banTime = 4320
 		end
 		

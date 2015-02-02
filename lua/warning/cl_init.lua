@@ -2,6 +2,8 @@ MsgC(Color(0, 255, 0), "Initialize Warning Module...\n")
 
 HWarn = {}
 
+WARNING_URL = "http://kkulkkule.dyndns.info:8282/hlds/admin/warning"
+
 function HWarn.Init()
 
 end

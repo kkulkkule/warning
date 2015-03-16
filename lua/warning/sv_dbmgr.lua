@@ -76,6 +76,32 @@ end
 hook.Remove("PlayerInitialSpawn", "HWarnDBAddPlayerInfo", HWarn.DB.AddPlayerInfo)
 hook.Add("PlayerInitialSpawn", "HWarnDBAddPlayerInfo", HWarn.DB.AddPlayerInfo)
 
+function HWarn.DB.ProcessWarn(sid)
+	http.Post(WARNING_URL, {game = GAME_NAME, action = "getWarn", sid = sid}, function(body, len, headers, status)
+		local warn = tonumber(body)
+
+		local banTime = 0
+		
+		if warn == 3 then
+			ulx.banid(NULL, sid, 1440, "누적 경고 3회로 1일 밴 당하셨습니다.")
+			banTime = 1440
+		elseif warn > 3 then
+			ulx.banid(NULL, sid, 4320, "누적 경고 4회로 3일 밴 당하셨습니다.")
+			banTime = 4320
+		end
+		
+		if warn >= 3 then
+			http.Post(WARNING_URL, {game = GAME_NAME, action = "ban", sid = sid, ban = "1", banTime = tostring(banTime)}, function(body, len, headers, status)
+				
+			end)
+		elseif warn <= 0 then
+			http.Post(WARNING_URL, {game = GAME_NAME, action = "ban", sid = sid, ban = "0"}, function()
+				ulx.unban(NULL, sid)
+			end)
+		end
+	end)
+end
+
 function HWarn.DB.AddWarn(sid, warn, reason)
 	if !sid then
 		Error("No SID\n")
@@ -113,6 +139,23 @@ function HWarn.DB.AddWarn(sid, warn, reason)
 		-- end
 	-- end
 	
+	local pl = nil
+	
+	if !string.find(sid, "^STEAM_%d:%d:%d+$") then
+		for _, v in pairs(player.GetAll()) do
+			if string.find(string.upper(v:Nick()), string.upper(sid)) then
+				pl = v
+				break
+			end
+		end
+	end
+	
+	local nick = nil
+	if pl and IsValid(pl) then
+		nick = pl:Nick()
+		sid = pl:SteamID()
+	end
+	
 	ulx.tsay(NULL, "<" .. (nick and nick or "{알 수 없음}") .. "(" .. sid .. ")>님의 경고 " .. tostring(warn) .. "회를 서버에 요청 중입니다.")
 	http.Post(WARNING_URL, {game = GAME_NAME, action = "addWarn", sid = sid, warns = tostring(warn)}, function(body, len, headers, status)
 		if !string.find(body, "^%d+$") then
@@ -133,16 +176,16 @@ end
 	-- return nick
 -- end
 
-function HWarn.DB.SIDFromNick(nick)
-	if !nick then
-		Error("No nick\n")
-	end
-	local sid = sql.QueryValue("SELECT sid FROM HWarn WHERE nick LIKE '%" .. nick .. "%'")
-	if !sid then
-		return false
-	end
-	return sid
-end
+-- function HWarn.DB.SIDFromNick(nick)
+	-- if !nick then
+		-- Error("No nick\n")
+	-- end
+	-- local sid = sql.QueryValue("SELECT sid FROM HWarn WHERE nick LIKE '%" .. nick .. "%'")
+	-- if !sid then
+		-- return false
+	-- end
+	-- return sid
+-- end
 
 function HWarn.DB.GetDateString()
 	return os.date("%y/%m/%d", os.time())

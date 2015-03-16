@@ -14,7 +14,7 @@ function HWarn.Init()
 end
 hook.Add("Initialize", "HWarn.Init", HWarn.Init)
 
-function HWarn.WarnMsg(sid, warn, reason)
+function HWarn.WarnMsg(sid, warn, reason, nick)
 	-- local nick = HWarn.DB.NickFromSID(sid)
 	if !nick then
 		nick = sid
@@ -56,23 +56,25 @@ function HWarn.Warn(pl, cmd, args, text)
 		local curpls = {}
 		for _, v in pairs(player.GetAll()) do
 			if string.find(string.lower(v:Nick()), string.lower(sid)) then
-			table.insert(curpls, v)
+				table.insert(curpls, v)
 			end
 		end
 		if table.Count(curpls) > 1 then
+			local curplsnicks = {}
+			for _, v in pairs(curpls) do
+				table.insert(curplsnicks, v:Nick())
+			end
 			if pl == NULL then
 				print(HUD_PRINTTALK, "Duplicated nickname.")
 			else
-				pl:PrintMessage(HUD_PRINTTALK, "해당 닉네임의 플레이어가 둘 이상입니다: " .. tostring(table.concat(curpls, ", ")))
+				pl:PrintMessage(HUD_PRINTTALK, "해당 닉네임의 플레이어가 둘 이상입니다: " .. tostring(table.concat(curplsnicks, ", ")))
 			end
 			return false
 		elseif table.Count(curpls) == 1 then
 			HWarn.DB.AddWarn(curpls[1]:SteamID(), warn, reason)
 			return true
 		end
-		sid = HWarn.DB.SIDFromNick(sid)
-	end
-	
+	end	
 	HWarn.DB.AddWarn(sid, warn, reason)
 end
 
@@ -95,60 +97,44 @@ function HWarn.ShowWarn(pl, cmd, args, text)
 			HWarn.ShowWarnMsg(curpls[1]:SteamID())
 			return true
 		end
-		sid = HWarn.DB.SIDFromNick(sid)
 	end
 	HWarn.ShowWarnMsg(sid)
 end
 
 function HWarn.ShowWarnMsg(sid)
-	-- local nick = HWarn.DB.NickFromSID(sid)
-	if !nick then	
-		Error("Couldn't find matched nickname.")
-	end
-	-- local warn = HWarn.DB.GetWarn(sid)
-	
 	http.Post(WARNING_URL, {game = GAME_NAME, action = "getWarn", sid = sid}, function(body, len, headers, status)
-		local warn = tonumber(body)
+		
+		local exploded = string.Explode("\n", body)
+		local warn = exploded[1]
+		local nick = exploded[2]		
+
 		net.Start("HWarn")
 		net.WriteString("showwarn")
-		net.WriteString(nick)
-		net.WriteInt(warn, 16)
+		net.WriteString(nick or "알 수 없음")
+		net.WriteInt(tonumber(warn), 16)
 		net.Broadcast()
 		ulx.logString("Warning of " .. nick .. " is: " .. warn)
 		MsgC(Color(0, 255, 0), "Warning of ", nick, " is: ") MsgC(Color(255, 0, 0), warn, "\n")
 		
-		local banTime = 0
+		-- local banTime = 0
 		
-		-- if warn == 1 then
-			-- HWarn.KickConnectedPlayerBySID(sid)
-		-- elseif warn == 2 then
-			-- ulx.banid(NULL, sid, 60, "누적 경고 2회로 1시간 밴 당하셨습니다.")
-			-- banTime = 1000 * 60 * 60
-		-- elseif warn == 3 then
+		-- if warn == 3 then
 			-- ulx.banid(NULL, sid, 1440, "누적 경고 3회로 1일 밴 당하셨습니다.")
-			-- banTime = 1000 * 60 * 60 * 24
+			-- banTime = 1440
 		-- elseif warn > 3 then
-			-- ulx.banid(NULL, sid, 4320, "누적 경고 횟수가 4회를 넘어 3일 밴 당하셨습니다.")
-			-- banTime = 1000 * 60 * 60 * 24 * 3
+			-- ulx.banid(NULL, sid, 4320, "누적 경고 4회로 3일 밴 당하셨습니다.")
+			-- banTime = 4320
 		-- end
 		
-		if warn == 3 then
-			ulx.banid(NULL, sid, 1440, "누적 경고 3회로 1일 밴 당하셨습니다.")
-			banTime = 1440
-		elseif warn > 3 then
-			ulx.banid(NULL, sid, 4320, "누적 경고 4회로 3일 밴 당하셨습니다.")
-			banTime = 4320
-		end
-		
-		if warn >= 3 then
-			http.Post(WARNING_URL, {game = GAME_NAME, action = "ban", sid = sid, ban = "1", banTime = tostring(banTime)}, function(body, len, headers, status)
+		-- if warn >= 3 then
+			-- http.Post(WARNING_URL, {game = GAME_NAME, action = "ban", sid = sid, ban = "1", banTime = tostring(banTime)}, function(body, len, headers, status)
 				
-			end)
-		elseif warn < 3 then
-			http.Post(WARNING_URL, {game = GAME_NAME, action = "ban", sid = sid, ban = "0"}, function()
-				ulx.unban(NULL, sid)
-			end)
-		end
+			-- end)
+		-- elseif warn <= 0 then
+			-- http.Post(WARNING_URL, {game = GAME_NAME, action = "ban", sid = sid, ban = "0"}, function()
+				-- ulx.unban(NULL, sid)
+			-- end)
+		-- end
 	end)
 end
 
